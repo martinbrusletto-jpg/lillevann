@@ -221,6 +221,127 @@
   .lb-tile .lb-cap { opacity: 0; transform: translateY(10px); transition: opacity .5s cubic-bezier(.16,1,.3,1), transform .5s cubic-bezier(.16,1,.3,1); }
   .lb-tile:hover .lb-cap { opacity: 1; transform: translateY(0); }
 </style>
+<style>
+  /* ---- Mobile hamburger toggle (CSS-only, no JS) ---- */
+  /* The toggle checkbox + button are hidden on desktop so the layout is unchanged. */
+  .ve-nav-toggle { display: none; }
+  .ve-nav-btn { display: none; }
+
+  @media (max-width: 860px) {
+    /* Let flex/grid children shrink below their content size so nothing forces overflow */
+    * { min-width: 0; }
+    img, iframe { max-width: 100% !important; }
+
+    /* --- Header --- */
+    header {
+      padding: 16px clamp(16px, 5vw, 32px) !important;
+      flex-wrap: wrap !important;
+    }
+    /* keep brand on one line */
+    header > div[ref] { font-size: 13px !important; white-space: nowrap !important; }
+
+    /* hamburger button visible on mobile */
+    .ve-nav-btn {
+      display: flex !important;
+      flex-direction: column;
+      justify-content: center;
+      gap: 5px;
+      width: 44px;
+      height: 44px;
+      padding: 10px;
+      margin: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      z-index: 60;
+    }
+    .ve-nav-btn span {
+      display: block;
+      height: 2px;
+      width: 100%;
+      background: currentColor;
+      border-radius: 2px;
+      transition: transform .35s ease, opacity .35s ease;
+    }
+    /* the button inherits color from the header text colour set by JS */
+    .ve-nav-btn { color: #f4f1ec; }
+    header[style*="rgba(244,241,236"] .ve-nav-btn,
+    header[style*="244, 241, 236"] .ve-nav-btn { color: #14110e; }
+
+    /* nav becomes a full-width dropdown panel below the header bar */
+    header nav {
+      position: absolute !important;
+      top: 100% !important;
+      left: 0 !important;
+      right: 0 !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 4px !important;
+      background: #14110e !important;
+      padding: 12px clamp(16px, 5vw, 32px) 20px !important;
+      box-shadow: 0 18px 40px rgba(20,17,14,0.4) !important;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transition: max-height .4s ease, opacity .3s ease, padding .4s ease;
+    }
+    /* open state */
+    .ve-nav-toggle:checked ~ nav {
+      max-height: 80vh !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+    }
+    /* animate hamburger -> X when open */
+    .ve-nav-toggle:checked ~ .ve-nav-btn span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .ve-nav-toggle:checked ~ .ve-nav-btn span:nth-child(2) { opacity: 0; }
+    .ve-nav-toggle:checked ~ .ve-nav-btn span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* nav items: full-width, large touch targets, readable on the dark panel */
+    header nav a {
+      color: #f4f1ec !important;
+      opacity: 1 !important;
+      display: flex !important;
+      align-items: center;
+      min-height: 48px;
+      padding: 12px 14px !important;
+      font-size: 13px !important;
+      border-radius: 10px;
+      background: transparent !important;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    /* the two CTA links keep a filled pill look but full width */
+    header nav a[href*=".pdf"],
+    header nav a[href="#visning"] {
+      background: #f4f1ec !important;
+      color: #14110e !important;
+      justify-content: center;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    /* --- Collapse multi-column grids to single column --- */
+    [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+    /* the floor-plan tab switcher is a small inline pill row, keep it as-is */
+    [style*="display: inline-flex"][style*="border-radius: 100px"] { grid-template-columns: none !important; }
+
+    /* gallery uses a 12-col masonry grid; let every tile span the full width and use a fixed comfortable height */
+    [style*="grid-template-columns: repeat(12"] { grid-auto-rows: clamp(190px, 56vw, 300px) !important; }
+    [style*="grid-column: span"] { grid-column: 1 / -1 !important; grid-row: auto !important; }
+
+    /* contain decorative blurred gradient layers so their negative-offset children
+       can't be measured past the viewport edge (visually identical: parent is inset:0
+       and the section already clips with overflow:hidden) */
+    [style*="position: absolute"][style*="pointer-events: none"][style*="inset"] { overflow: hidden !important; }
+    /* the individual gradient blobs use negative right offsets; pin them so their
+       measured box can't exceed the viewport (purely decorative, blur is unchanged) */
+    [style*="position: absolute"][style*="radial-gradient"][style*="right: -"] { right: 0 !important; }
+
+    /* hero image scale(1.06) made it ~408px wide; the section clips it but keep it bounded */
+    section > img[style*="scale(1.06)"] { transform: scale(1.0) !important; }
+  }
+</style>
 
 </helmet>
 
@@ -230,6 +351,8 @@
 
   <header ref="{{ header }}" style="position: fixed; top: 0; left: 0; right: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; padding: 22px clamp(20px, 5vw, 64px); transition: background 0.5s ease, padding 0.5s ease, box-shadow 0.5s ease; mix-blend-mode: normal;">
     <div ref="{{ brand }}" style="font-size: 15px; letter-spacing: 0.22em; font-weight: 600; text-transform: uppercase; color: #f4f1ec; transition: color 0.5s ease;">Villa Eira</div>
+    <input class="ve-nav-toggle" type="checkbox" id="ve-nav-toggle" aria-hidden="true" tabindex="-1" style="position:absolute; opacity:0; width:0; height:0; pointer-events:none;">
+    <label class="ve-nav-btn" for="ve-nav-toggle" aria-label="Meny"><span></span><span></span><span></span></label>
     <nav style="display: flex; gap: clamp(14px, 2.5vw, 34px); align-items: center;">
       <a ref="{{ navlink }}" href="#eiendommen" style="font-size: 12.5px; letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; color: #f4f1ec; opacity: 0.82; transition: color 0.5s ease, opacity 0.3s ease;" onmouseenter="{{ navEnter }}" onmouseleave="{{ navLeave }}">Eiendommen</a>
       <a ref="{{ navlink }}" href="#fakta" style="font-size: 12.5px; letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; color: #f4f1ec; opacity: 0.82; transition: color 0.5s ease, opacity 0.3s ease;" onmouseenter="{{ navEnter }}" onmouseleave="{{ navLeave }}">Fakta</a>
